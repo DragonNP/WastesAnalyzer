@@ -54,7 +54,22 @@ class UsersDB:
             self.logger.error(f'Не удалось сохранить пользователя. id пользователя:{user_id}', e)
             return False
 
-    def get_categories(self, user_id: int):
+    def get_datas(self, user_id: int, category: str):
+        self.logger.debug(
+            f'Запрос всех показаний пользователя. id пользователя:{user_id} категория:{category}')
+
+        try:
+            if not self.__check_user(user_id):
+                self.logger.debug(f'Пользователь не найден. id пользователя:{user_id}')
+                self.add_user(user_id)
+
+            return self.db[str(user_id)][category]
+        except Exception as e:
+            self.logger.error(
+                f'Не удалось отправить все показания. id пользователя:{user_id} категория:{category}', e)
+            return {}
+
+    def get_categories_name(self, user_id: int):
         self.logger.debug(
             f'Запрос категорий пользователя. id пользователя:{user_id}')
 

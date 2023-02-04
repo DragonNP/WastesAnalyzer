@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from const_variables import *
 import telegram
 import logging
@@ -10,6 +12,7 @@ from telegram.ext import (
     MessageHandler,
     Filters, CallbackQueryHandler,
 )
+import matplotlib.pyplot as plt
 
 from database import UsersDB
 
@@ -19,10 +22,27 @@ logger.setLevel(GLOBAL_LOGGER_LEVEL)
 users = UsersDB()
 
 CATEGORY, YEAR, MONTH, DATA = range(4)
+GET_YEAR, SEND_PLOT = range(2)
+
+
+def generate_plot(month: list, data: list):
+    fig, ax = plt.subplots()
+
+    x = month
+    y = data
+
+    plot_file = BytesIO()
+    ax.plot(x, y)
+    plt.xlabel("Месяц")
+    plt.ylabel("Показания")
+    fig.savefig(plot_file, format='png')
+    plot_file.seek(0)
+
+    return plot_file
 
 
 def get_user_keyboard():
-    keyboard = [['Добавить показания']]
+    keyboard = [['Добавить показания'], ['Вывести график']]
 
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -40,13 +60,62 @@ def send_start_msg(update: Update, context: CallbackContext) -> None:
                               disable_web_page_preview=True, reply_markup=get_user_keyboard())
 
 
+def start_send_plot(update: Update, context: CallbackContext) -> None:
+    user_id = update.message.from_user.id
+
+    logger.debug(f'Начало формирования графика. пользователь:{user_id}')
+
+    keyboard = [['Назад']]
+    for name in users.get_categories_name(user_id):
+        keyboard.append([name])
+
+    update.message.reply_text('Выбери категорию по какой вы хотите сформировать график',
+                              reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
+    return GET_YEAR
+
+
+def get_year(update: Update, context: CallbackContext) -> None:
+    user_id = update.message.from_user.id
+    context.user_data['category'] = category = update.message.text
+
+    logger.debug(f'Сохраняем категорию. пользователь:{user_id}, категория:{category}')
+
+    keyboard = [['Назад']]
+    for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
+        keyboard.append([name])
+
+    update.message.reply_text('Отлично! Теперь введите год за который вы сформировать график',
+                              reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
+    return SEND_PLOT
+
+
+def send_plot(update: Update, context: CallbackContext) -> int:
+    user_id = update.message.from_user.id
+    category = context.user_data['category']
+    year = update.message.text
+
+    logger.info(f'Отправка графика. пользователь:{user_id} категория:{category} год:{year}')
+
+    datas = users.get_datas(user_id, category)
+    months = []
+    values = []
+
+    for key in sorted([int(x) for x in datas[year].keys()]):
+        months.append(key)
+        values.append(int(datas[year][str(key)]))
+
+    context.bot.send_photo(user_id, photo=generate_plot(months, values), reply_markup=get_user_keyboard())
+
+    return ConversationHandler.END
+
+
 def start_add_data(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало добавления показания. пользователь:{user_id}')
 
     keyboard = [['Назад']]
-    for name in users.get_categories(user_id): keyboard.append([name])
+    for name in users.get_categories_name(user_id): keyboard.append([name])
 
     update.message.reply_text('Выберите в какую категорию вы хотите добавить показания. Или введите другую, чтобы ее '
                               'создать',
@@ -79,8 +148,9 @@ def add_year(update: Update, context: CallbackContext) -> None:
 
     keyboard = [['Назад']]
 
-    update.message.reply_text('Отлично! Теперь введите месяц (в числовом формате) за который вы хотите добавить показания',
-                              reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
+    update.message.reply_text(
+        'Отлично! Теперь введите месяц (в числовом формате) за который вы хотите добавить показания',
+        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return MONTH
 
@@ -99,7 +169,7 @@ def add_month(update: Update, context: CallbackContext) -> None:
     return DATA
 
 
-def add_data(update: Update, context: CallbackContext) -> None:
+def add_data(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
     data = update.message.text
 
@@ -125,6 +195,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
     del context.user_data['category']
     del context.user_data['year']
     del context.user_data['month']
+    del context.user_data['category']
     return ConversationHandler.END
 
 
@@ -157,7 +228,16 @@ def main() -> None:
         },
         fallbacks=[MessageHandler(Filters.text('Назад'), cancel)]
     )
+    send_plot_handler = ConversationHandler(
+        entry_points=[MessageHandler(Filters.text('Вывести график'), start_send_plot)],
+        states={
+            GET_YEAR: [MessageHandler(Filters.text, get_year)],
+            SEND_PLOT: [MessageHandler(Filters.text, send_plot)],
+        },
+        fallbacks=[MessageHandler(Filters.text('Назад'), cancel)]
+    )
     dispatcher.add_handler(add_data_handler)
+    dispatcher.add_handler(send_plot_handler)
 
     dispatcher.add_error_handler(error_callback)
 
