@@ -13,7 +13,6 @@ from telegram.ext import (
 logger = logging.getLogger('main')
 logger.setLevel(GLOBAL_LOGGER_LEVEL)
 
-# TODO: Не показания, а расход
 
 def send_start_msg(update: Update, _) -> None:
     user_id = update.message.from_user.id

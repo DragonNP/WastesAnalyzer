@@ -114,7 +114,7 @@ def _generate_plot(title, x: list, y: list):
     fig.autofmt_xdate()
     plt.title(title)
     plt.xlabel("Месяц")
-    plt.ylabel("Показания")
+    plt.ylabel("Показания (кВт*ч)")
     plt.autoscale()
 
     fig.savefig(plot_file, format='png')

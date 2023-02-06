@@ -29,17 +29,18 @@ def get():
     )
 
 
-def start_add_data(update: Update, context: CallbackContext) -> None:
+def start_add_data(update: Update, _) -> None:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало добавления показания. id:{user_id}')
 
-    keyboard = [['Назад']]
-    for name in users.get_categories_name(user_id): keyboard.append([name])
+    keyboard = []
+    for name in users.get_categories_name(user_id):
+        keyboard.append([name])
+    keyboard.append(['Назад'])
 
     update.message.reply_text(
-        'Выберите в какую категорию вы хотите добавить показания. Или введите другую, чтобы ее '
-        'создать',
+        'Выберите в какую категорию вы хотите добавить расход. Или введите другую, чтобы ее создать',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return CATEGORY
@@ -51,11 +52,12 @@ def add_category(update: Update, context: CallbackContext) -> None:
 
     logger.debug(f'Сохраняем категорию. id:{user_id}, категория:{category}')
 
-    keyboard = [['Назад']]
+    keyboard = []
     for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
         keyboard.append([name])
+    keyboard.append(['Назад'])
 
-    update.message.reply_text('Отлично! Теперь введите год за который вы хотите добавить показания',
+    update.message.reply_text('Отлично! Теперь введите год за который вы хотите добавить расход',
                               reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                resize_keyboard=True))
 
@@ -68,16 +70,21 @@ def add_year(update: Update, context: CallbackContext) -> None:
 
     logger.debug(f'Сохраняем год. id:{user_id}, год:{year}')
 
-    keyboard = [['Назад']]
+    keyboard = []
+    names_rus_months = helper.get_rus_names_months()
 
-    datas = users.get_datas(user_id, context.user_data['category'])
-
-    if datas != {} and year in datas:
-        for name in sorted([int(x) for x in datas[year].keys()]):
+    flag = True
+    for name in names_rus_months:
+        if flag:
             keyboard.append([name])
+            flag = False
+            continue
+        keyboard[-1].append(name)
+        flag = True
+    keyboard.append(['Назад'])
 
     update.message.reply_text(
-        'Отлично! Теперь введите месяц (в числовом формате) за который вы хотите добавить показания',
+        'Отлично! Теперь введите месяц за который вы хотите добавить расход',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return MONTH
@@ -85,13 +92,13 @@ def add_year(update: Update, context: CallbackContext) -> None:
 
 def add_month(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    context.user_data['month'] = month = update.message.text
+    context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text)+1
 
     logger.debug(f'Сохраняем месяц. id:{user_id}, месяц:{month}')
 
     keyboard = [['Назад']]
 
-    update.message.reply_text('Отлично! И последний шаг, введите сами показания',
+    update.message.reply_text('Отлично! И последний шаг, введите сам расход в кВт*ч',
                               reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                resize_keyboard=True))
 
