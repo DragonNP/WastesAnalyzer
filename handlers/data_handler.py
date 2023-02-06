@@ -69,8 +69,12 @@ def add_year(update: Update, context: CallbackContext) -> None:
     logger.debug(f'Сохраняем год. id:{user_id}, год:{year}')
 
     keyboard = [['Назад']]
-    for name in sorted([int(x) for x in users.get_datas(user_id, context.user_data['category'])[year].keys()]):
-        keyboard.append([name])
+
+    datas = users.get_datas(user_id, context.user_data['category'])
+
+    if datas != {} and year in datas:
+        for name in sorted([int(x) for x in datas[year].keys()]):
+            keyboard.append([name])
 
     update.message.reply_text(
         'Отлично! Теперь введите месяц (в числовом формате) за который вы хотите добавить показания',

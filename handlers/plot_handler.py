@@ -65,16 +65,24 @@ def send_plot(update: Update, context: CallbackContext) -> int:
 
     logger.info(f'Отправка графика. пользователь:{user_id} категория:{category} год:{year}')
 
-    datas = users.get_datas(user_id, category)
+    datas_for_year = users.get_datas(user_id, category)[year]
+    title = f'{category}. {year} год.'
     months = []
     values = []
 
-    for key in sorted([int(x) for x in datas[year].keys()]):
-        months.append(key)
-        values.append(int(datas[year][str(key)]))
+    if len(datas_for_year) < 2:
+        update.message.reply_text('За этот Вы указали меньше двух месяцев расходов по этой катерогии.'
+                                  '\nВведите еще расходы за месяца, чтобы построить график.',
+                                  reply_markup=helper.get_user_keyboard())
+        return ConversationHandler.END
+
+    rus_names_months = helper.get_min_rus_names_months()
+    for key in sorted([int(x) for x in datas_for_year.keys()]):
+        months.append(rus_names_months[key - 1])
+        values.append(int(datas_for_year[str(key)]))
 
     context.bot.send_photo(user_id,
-                           photo=_generate_plot(months, values),
+                           photo=_generate_plot(title, months, values),
                            reply_markup=helper.get_user_keyboard())
 
     return ConversationHandler.END
@@ -97,17 +105,18 @@ def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-def _generate_plot(month: list, data: list):
+def _generate_plot(title, x: list, y: list):
     fig, ax = plt.subplots()
-
-    x = month
-    y = data
 
     plot_file = BytesIO()
     ax.plot(x, y)
+
+    fig.autofmt_xdate()
+    plt.title(title)
     plt.xlabel("Месяц")
     plt.ylabel("Показания")
+    plt.autoscale()
+
     fig.savefig(plot_file, format='png')
     plot_file.seek(0)
-
     return plot_file

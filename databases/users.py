@@ -134,6 +134,7 @@ def add_category(user_id: int, category_name: str):
 
 def add_data(user_id: int, category: str, year: str, month: str, data: str):
     global logger, db
+    month = str(int(month))
     debug_text = f'id:{user_id}, год:{year}, месяц:{month}, данные:{data}'
 
     try:
