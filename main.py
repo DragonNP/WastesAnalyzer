@@ -33,7 +33,8 @@ def error_callback(update: Update, context: CallbackContext):
 
     logger.error(error)
     update.message.reply_text(
-        'Произошла ошибка. Пожалуйста, свяжитесь со мной через телеграм t.me/dragon_np или через почту dragonnp@yandex.ru')
+        'Произошла ошибка. Пожалуйста, свяжитесь со мной через телеграм t.me/dragon_np или через почту dragonnp@yandex.ru',
+        reply_markup=helper.get_user_keyboard())
 
 
 def main() -> None:

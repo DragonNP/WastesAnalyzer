@@ -20,10 +20,10 @@ def get():
     return ConversationHandler(
         entry_points=[MessageHandler(Filters.text('Добавить показания'), start_add_data)],
         states={
-            CATEGORY: [MessageHandler(Filters.text, add_category)],
-            YEAR: [MessageHandler(Filters.text, add_year)],
-            MONTH: [MessageHandler(Filters.text, add_month)],
-            DATA: [MessageHandler(Filters.text, add_data)],
+            CATEGORY: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_category)],
+            YEAR: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_year)],
+            MONTH: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_month)],
+            DATA: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_data)],
         },
         fallbacks=[MessageHandler(Filters.text('Назад'), cancel)]
     )
@@ -122,10 +122,12 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
     logger.debug(f'Пользователь отменил добавление показаний. id пользователя:{user_id}')
 
-    del context.user_data['category']
-    del context.user_data['year']
-    del context.user_data['month']
-    del context.user_data['category']
+    if 'category' in context.user_data:
+        del context.user_data['category']
+    if 'year' in context.user_data:
+        del context.user_data['year']
+    if 'month' in context.user_data:
+        del context.user_data['month']
 
     update.message.reply_text('Хорошо, отменяем.',
                               reply_markup=helper.get_user_keyboard())
