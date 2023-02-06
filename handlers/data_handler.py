@@ -7,7 +7,7 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext,
     MessageHandler,
-    Filters,
+    filters,
 )
 
 logger = logging.getLogger('data_handler')
@@ -18,18 +18,18 @@ CATEGORY, YEAR, MONTH, DATA = range(4)
 
 def get():
     return ConversationHandler(
-        entry_points=[MessageHandler(Filters.text('Добавить показания'), start_add_data)],
+        entry_points=[MessageHandler(filters.Text(['Добавить расход']), start_add_data)],
         states={
-            CATEGORY: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_category)],
-            YEAR: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_year)],
-            MONTH: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_month)],
-            DATA: [MessageHandler(Filters.text & (~Filters.text('Назад')), add_data)],
+            CATEGORY: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_category)],
+            YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_year)],
+            MONTH: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_month)],
+            DATA: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_data)],
         },
-        fallbacks=[MessageHandler(Filters.text('Назад'), cancel)]
+        fallbacks=[MessageHandler(filters.Text(['Назад']), cancel)]
     )
 
 
-def start_add_data(update: Update, _) -> None:
+async def start_add_data(update: Update, _) -> None:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало добавления показания. id:{user_id}')
@@ -39,14 +39,14 @@ def start_add_data(update: Update, _) -> None:
         keyboard.append([name])
     keyboard.append(['Назад'])
 
-    update.message.reply_text(
+    await update.message.reply_text(
         'Выберите в какую категорию вы хотите добавить расход. Или введите другую, чтобы ее создать',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return CATEGORY
 
 
-def add_category(update: Update, context: CallbackContext) -> None:
+async def add_category(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     context.user_data['category'] = category = update.message.text
 
@@ -54,17 +54,17 @@ def add_category(update: Update, context: CallbackContext) -> None:
 
     keyboard = []
     for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
-        keyboard.append([name])
+        keyboard.append([str(name)])
     keyboard.append(['Назад'])
 
-    update.message.reply_text('Отлично! Теперь введите год за который вы хотите добавить расход',
-                              reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
-                                                               resize_keyboard=True))
+    await update.message.reply_text('Отлично! Теперь введите год за который вы хотите добавить расход',
+                                    reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                                     resize_keyboard=True))
 
     return YEAR
 
 
-def add_year(update: Update, context: CallbackContext) -> None:
+async def add_year(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     context.user_data['year'] = year = update.message.text
 
@@ -83,29 +83,29 @@ def add_year(update: Update, context: CallbackContext) -> None:
         flag = True
     keyboard.append(['Назад'])
 
-    update.message.reply_text(
+    await update.message.reply_text(
         'Отлично! Теперь введите месяц за который вы хотите добавить расход',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return MONTH
 
 
-def add_month(update: Update, context: CallbackContext) -> None:
+async def add_month(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text)+1
+    context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text) + 1
 
     logger.debug(f'Сохраняем месяц. id:{user_id}, месяц:{month}')
 
     keyboard = [['Назад']]
 
-    update.message.reply_text('Отлично! И последний шаг, введите сам расход в кВт*ч',
-                              reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
-                                                               resize_keyboard=True))
+    await update.message.reply_text('Отлично! И последний шаг, введите сам расход',
+                                    reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                                     resize_keyboard=True))
 
     return DATA
 
 
-def add_data(update: Update, context: CallbackContext) -> int:
+async def add_data(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
     data = update.message.text
 
@@ -122,13 +122,13 @@ def add_data(update: Update, context: CallbackContext) -> int:
                    context.user_data['month'],
                    data)
 
-    update.message.reply_text('Супер. Показания переданы',
-                              reply_markup=helper.get_user_keyboard())
+    await update.message.reply_text('Супер. Показания переданы',
+                                    reply_markup=helper.get_user_keyboard())
 
     return ConversationHandler.END
 
 
-def cancel(update: Update, context: CallbackContext) -> int:
+async def cancel(update: Update, context: CallbackContext) -> int:
     user_id = update.message.from_user.id
 
     logger.debug(f'Пользователь отменил добавление показаний. id пользователя:{user_id}')
@@ -140,6 +140,6 @@ def cancel(update: Update, context: CallbackContext) -> int:
     if 'month' in context.user_data:
         del context.user_data['month']
 
-    update.message.reply_text('Хорошо, отменяем.',
-                              reply_markup=helper.get_user_keyboard())
+    await update.message.reply_text('Хорошо, отменяем.',
+                                    reply_markup=helper.get_user_keyboard())
     return ConversationHandler.END
