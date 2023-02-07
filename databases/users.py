@@ -2,50 +2,50 @@ import json
 from variables import *
 
 logger = logging.getLogger('users_db')
-db_loaded = False
+logger.setLevel(GLOBAL_LOGGER_LEVEL)
 db = {}
 location = ''
 
 
 def load():
-    global logger, db_loaded, db, location
+    """
+    Считывает файл базы данных и загружает ее в переменную
+    :return: None
+    """
 
-    logger.setLevel(GLOBAL_LOGGER_LEVEL)
-    logger.debug('Начало загрузки бд пользователей')
+    global logger, db, location
+
+    logger.debug('Загрузка бд пользователей')
 
     location = os.path.expanduser(PATH_TO_USERS_DATA_BASE)
 
     if os.path.exists(location):
         db = json.load(open(location, 'r'))
 
-    db_loaded = True
-    logger.debug('Загрузка бд пользователей завершена')
-
-
-def _check_db_loaded():
-    global logger, db_loaded
-
-    logger.debug('Проверка загрузки бд')
-
-    if not db_loaded:
-        load()
-
 
 def _check_user(user_id: int):
+    """
+    Проверяет существование id пользователя в базе данных
+    :param user_id: id пользователя, которого надо проверить
+    :return: True - если id в базе данных, False - если нет
+    """
+
     global logger, db
 
     logger.debug('Проверка существования пользователя')
-    _check_db_loaded()
     return str(user_id) in db.keys()
 
 
 def _dump_db():
+    """
+    Сохраняет базу данных в текстовый файл.
+    :return: None
+    """
+
     global logger, db, location
 
     try:
         logger.debug('Сохранение дб')
-
-        _check_db_loaded()
 
         json.dump(db, open(location, 'w+'))
         logger.debug('Бд сохранена')
@@ -54,6 +54,12 @@ def _dump_db():
 
 
 def add_user(user_id: int):
+    """
+    Добавляет id пользователя в базу данных
+    :param user_id: id пользователя
+    :return: None
+    """
+
     global logger, db
 
     try:
@@ -71,6 +77,13 @@ def add_user(user_id: int):
 
 
 def get_datas(user_id: int, category: str):
+    """
+    Возвращает список в формате {'Год': {'Месяц (число)', 'Расход'}, и т.д.}
+    :param user_id: id пользователя, у которого надо взять расходы
+    :param category: категория, по которой ищутся расходы
+    :return: Список расходов
+    """
+
     global logger, db
 
     debug_text = f'id:{user_id} категория:{category}'
@@ -85,8 +98,6 @@ def get_datas(user_id: int, category: str):
         if category not in db[str(user_id)]:
             logger.debug(f'Категория не существует. {debug_text}')
             return {}
-
-        logger.debug(f'Запрос отправлен. {debug_text}')
         return db[str(user_id)][category]
     except Exception as e:
         logger.error(f'Не удалось отправить все показания. {debug_text}', e)
@@ -94,6 +105,12 @@ def get_datas(user_id: int, category: str):
 
 
 def get_categories_name(user_id: int):
+    """
+    Возвращаяет название категорий пользователя
+    :param user_id: id пользователя
+    :return: массив в формате ['Название', и тд]
+    """
+
     global logger, db
 
     try:
@@ -103,7 +120,6 @@ def get_categories_name(user_id: int):
             logger.debug(f'Пользователь не найден. id:{user_id}')
             add_user(user_id)
 
-        logger.debug(f'Запрос отправлен. id:{user_id}')
         return list(db[str(user_id)].keys())
     except Exception as e:
         logger.error(f'Не удалось категории пользователя. id:{user_id}', e)
@@ -111,7 +127,15 @@ def get_categories_name(user_id: int):
 
 
 def add_category(user_id: int, category_name: str):
+    """
+    Добавляет категорию пользователя
+    :param user_id: id пользователя
+    :param category_name: название новой категории
+    :return: None
+    """
+
     global logger, db
+
     debug_text = f'id:{user_id}, имя:{category_name}'
 
     try:
@@ -133,7 +157,18 @@ def add_category(user_id: int, category_name: str):
 
 
 def add_data(user_id: int, category: str, year: str, month: str, data: str):
+    """
+    Добавляет расход к пользователю
+    :param user_id: id пользователя
+    :param category: категория
+    :param year: год
+    :param month: месяц
+    :param data: расход
+    :return: None
+    """
+
     global logger, db
+
     month = str(int(month))
     debug_text = f'id:{user_id}, год:{year}, месяц:{month}, данные:{data}'
 
@@ -159,42 +194,3 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str):
             logger.error(f'Показания уже сохранены за этот период. {debug_text}')
     except Exception as e:
         logger.error(f'Категория не найдена. Не удалось добавить показания {debug_text}', e)
-
-# def check_link(self, str(user_id): int, name: str):
-#     res = name in self.db[str(str(user_id))]
-#     self.logger.debug(f'Проверка ссылки в базе данных. результат:{res}')
-#     return res
-
-# def remove_link(self, str(user_id): int, name: str):
-#     self.logger.debug(f'Удаление ссылки. id пользователя:{str(user_id)}, имя:{name}')
-#
-#     try:
-#         if not self.__check_user(str(user_id)):
-#             self.logger.debug(f'Пользователь не найден. id пользователя:{str(user_id)}')
-#             self.add_user(str(user_id))
-#         if not self.check_link(str(user_id), name):
-#             self.logger.debug(f'Ссылка не найдена не найдена. id пользователя:{str(user_id)}, имя:{name}')
-#             return False
-#
-#         del self.db[str(str(user_id))][name]
-#         self.__dump_db()
-#         return True
-#     except Exception as e:
-#         self.logger.error(f'Не удалось удалить ссылку. id пользователя:{str(user_id)}, имя:{name}', e)
-#         return False
-
-# def remove_all(self, str(user_id): int):
-#     self.logger.debug(f'Удаление всех ссылок. id пользователя:{str(user_id)}')
-#
-#     try:
-#         if not self.__check_user(str(user_id)):
-#             self.logger.debug(f'Пользователь не найден. id пользователя:{str(user_id)}')
-#             self.add_user(str(user_id))
-#             return True
-#
-#         self.db[str(str(user_id))] = {}
-#         self.__dump_db()
-#         return True
-#     except Exception as e:
-#         self.logger.error(f'Не удалось все ссылки. id пользователя:{str(user_id)}', e)
-#         return False
