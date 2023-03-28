@@ -120,7 +120,7 @@ async def add_data(update: Update, context: CallbackContext) -> int:
                    context.user_data['category'],
                    context.user_data['year'],
                    context.user_data['month'],
-                   data)
+                   data.replace(',', '.'))
 
     await update.message.reply_text('Супер. Показания переданы',
                                     reply_markup=helper.get_user_keyboard())

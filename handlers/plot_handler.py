@@ -80,7 +80,7 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     rus_names_months = helper.get_min_rus_names_months()
     for key in sorted([int(x) for x in datas_for_year.keys()]):
         months.append(rus_names_months[key - 1])
-        values.append(int(datas_for_year[str(key)]))
+        values.append(float(datas_for_year[str(key)].replace(',', '.')))
 
     await context.bot.send_photo(user_id,
                                  photo=_generate_plot(title, months, values),

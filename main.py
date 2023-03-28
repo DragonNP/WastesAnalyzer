@@ -5,6 +5,7 @@ from handlers import plot_handler, data_handler
 import logging
 from telegram import Update
 from telegram.ext import (
+    ConversationHandler,
     CommandHandler,
     ContextTypes,
     Application,
@@ -12,7 +13,7 @@ from telegram.ext import (
 
 logger = logging.getLogger('main')
 logger.setLevel(GLOBAL_LOGGER_LEVEL)
-
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # TODO: Добавить вариацию измерений кВт*Ч или литры и так далее
 # TODO: Протестировать бота на отказо устойчивость
@@ -44,12 +45,18 @@ async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         'Произошла ошибка.\n'
         'Пожалуйста, свяжитесь со мной через телеграм t.me/dragon_np или через почту dragonnp@yandex.ru',
+        disable_web_page_preview=True,
         reply_markup=helper.get_user_keyboard())
+    return ConversationHandler.END
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        handlers=[
+                            logging.FileHandler(PATH_TO_LOG),
+                            logging.StreamHandler()
+                        ])
 
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 

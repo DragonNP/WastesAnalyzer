@@ -156,7 +156,7 @@ def add_category(user_id: int, category_name: str):
         logger.error(f'Не удалось сохранить категорию. {debug_text}', e)
 
 
-def add_data(user_id: int, category: str, year: str, month: str, data: str):
+def add_data(user_id: int, category: str, year: str, month: str, data: str) -> int:
     """
     Добавляет расход к пользователю
     :param user_id: id пользователя
@@ -164,12 +164,11 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str):
     :param year: год
     :param month: месяц
     :param data: расход
-    :return: None
+    :return: 0 - произошла ошибка, 1 - показания добавлены, 2 - показания изменены
     """
 
     global logger, db
 
-    month = str(int(month))
     debug_text = f'id:{user_id}, год:{year}, месяц:{month}, данные:{data}'
 
     try:
@@ -190,7 +189,12 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str):
             db[str(user_id)][category][year][month] = data
             _dump_db()
             logger.debug(f'Сохранение завершено. {debug_text}')
+            return 1
         else:
+            db[str(user_id)][category][year][month] = data
+            _dump_db()
             logger.error(f'Показания уже сохранены за этот период. {debug_text}')
+            return 2
     except Exception as e:
         logger.error(f'Категория не найдена. Не удалось добавить показания {debug_text}', e)
+        return 0
