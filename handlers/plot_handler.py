@@ -21,10 +21,10 @@ def get():
     return ConversationHandler(
         entry_points=[MessageHandler(filters.Text(['Сформировать график']), start_send_plot)],
         states={
-            GET_YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), get_year)],
-            SEND_PLOT: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), send_plot)],
+            GET_YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), get_year)],
+            SEND_PLOT: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), send_plot)],
         },
-        fallbacks=[MessageHandler(filters.Text(['Назад']), cancel)]
+        fallbacks=[MessageHandler(filters.Text(['Отменить']), cancel)]
     )
 
 
@@ -33,11 +33,12 @@ async def start_send_plot(update: Update, _) -> None:
 
     logger.debug(f'Начало формирования графика. пользователь:{user_id}')
 
-    keyboard = [['Назад']]
+    keyboard = []
     for name in users.get_categories_name(user_id):
         keyboard.append([name])
+    keyboard.append(['Отменить'])
 
-    await update.message.reply_text('Выбери категорию по какой вы хотите сформировать график',
+    await update.message.reply_text('Выберите нужную категорию',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
     return GET_YEAR
@@ -49,11 +50,12 @@ async def get_year(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     logger.debug(f'Сохраняем категорию. пользователь:{user_id}, категория:{category}')
 
-    keyboard = [['Назад']]
+    keyboard = []
     for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
         keyboard.append([str(name)])
+    keyboard.append(['Отменить'])
 
-    await update.message.reply_text('Отлично! Теперь введите год за который вы сформировать график',
+    await update.message.reply_text('А теперь выберите год',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
     return SEND_PLOT
@@ -115,7 +117,7 @@ def _generate_plot(title, x: list, y: list):
     fig.autofmt_xdate()
     plt.title(title)
     plt.xlabel("Месяц")
-    plt.ylabel("Показания")
+    plt.ylabel("Сумма, руб.")
     plt.autoscale()
 
     fig.savefig(plot_file, format='png')

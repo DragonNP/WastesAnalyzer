@@ -20,12 +20,12 @@ def get():
     return ConversationHandler(
         entry_points=[MessageHandler(filters.Text(['Добавить расход']), start_add_data)],
         states={
-            CATEGORY: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_category)],
-            YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_year)],
-            MONTH: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_month)],
-            DATA: [MessageHandler(filters.TEXT & (~filters.Text(['Назад'])), add_data)],
+            CATEGORY: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), add_category)],
+            YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), add_year)],
+            MONTH: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), add_month)],
+            DATA: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), add_data)],
         },
-        fallbacks=[MessageHandler(filters.Text(['Назад']), cancel)]
+        fallbacks=[MessageHandler(filters.Text(['Отменить']), cancel)]
     )
 
 
@@ -37,10 +37,10 @@ async def start_add_data(update: Update, _) -> None:
     keyboard = []
     for name in users.get_categories_name(user_id):
         keyboard.append([name])
-    keyboard.append(['Назад'])
+    keyboard.append(['Отменить'])
 
     await update.message.reply_text(
-        'Выберите в какую категорию вы хотите добавить расход. Или введите другую, чтобы ее создать',
+        'Выберите введённую ранее категорию или напишите название новой',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
 
     return CATEGORY
@@ -55,7 +55,7 @@ async def add_category(update: Update, context: CallbackContext) -> None:
     keyboard = []
     for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
         keyboard.append([str(name)])
-    keyboard.append(['Назад'])
+    keyboard.append(['Отменить'])
 
     await update.message.reply_text('Отлично! Теперь введите год за который вы хотите добавить расход',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
@@ -81,7 +81,7 @@ async def add_year(update: Update, context: CallbackContext) -> None:
             continue
         keyboard[-1].append(name)
         flag = True
-    keyboard.append(['Назад'])
+    keyboard.append(['Отменить'])
 
     await update.message.reply_text(
         'Отлично! Теперь введите месяц за который вы хотите добавить расход',
@@ -96,9 +96,9 @@ async def add_month(update: Update, context: CallbackContext) -> None:
 
     logger.debug(f'Сохраняем месяц. id:{user_id}, месяц:{month}')
 
-    keyboard = [['Назад']]
+    keyboard = [['Отменить']]
 
-    await update.message.reply_text('Отлично! И последний шаг, введите сам расход',
+    await update.message.reply_text('Отлично! И последний шаг, введите потраченную сумму',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
 
@@ -122,7 +122,7 @@ async def add_data(update: Update, context: CallbackContext) -> int:
                    context.user_data['month'],
                    data.replace(',', '.'))
 
-    await update.message.reply_text('Супер. Показания переданы',
+    await update.message.reply_text('Супер. Данные для анализа добавлены',
                                     reply_markup=helper.get_user_keyboard())
 
     return ConversationHandler.END
