@@ -87,8 +87,7 @@ async def add_month(update: Update, context: CallbackContext) -> None:
                                                                          resize_keyboard=True))
         return MONTH
 
-    # update.message.text
-    context.user_data['month'] = month = helper.get_rus_names_months().index() + 1
+    context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text) + 1
     logger.debug(f'Сохраняем месяц. id:{user_id}, месяц:{month}')
 
     keyboard = [['Отменить']]
