@@ -1,6 +1,6 @@
 from variables import GLOBAL_LOGGER_LEVEL
 import helper
-from databases import users
+from databases import users, polls
 import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
@@ -29,7 +29,7 @@ def get():
     )
 
 
-async def start_add_data(update: Update, _) -> None:
+async def start_add_data(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало добавления показания. id:{user_id}')
@@ -42,6 +42,10 @@ async def start_add_data(update: Update, _) -> None:
     await update.message.reply_text(
         'Выберите введённую ранее категорию или напишите название новой',
         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
 
     return CATEGORY
 
@@ -61,6 +65,10 @@ async def add_category(update: Update, context: CallbackContext) -> None:
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
 
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return YEAR
 
 
@@ -73,6 +81,10 @@ async def add_year(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(
         'Отлично! Теперь введите месяц за который вы хотите добавить расход',
         reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(), one_time_keyboard=True, resize_keyboard=True))
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
 
     return MONTH
 
@@ -95,6 +107,10 @@ async def add_month(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Отлично! И последний шаг, введите потраченную сумму',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
 
     return DATA
 
@@ -119,6 +135,10 @@ async def add_data(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text('Супер. Данные для анализа добавлены',
                                     reply_markup=helper.get_user_keyboard())
 
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return ConversationHandler.END
 
 
@@ -136,4 +156,9 @@ async def cancel(update: Update, context: CallbackContext) -> int:
 
     await update.message.reply_text('Хорошо, отменяем.',
                                     reply_markup=helper.get_user_keyboard())
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return ConversationHandler.END

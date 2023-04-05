@@ -1,6 +1,6 @@
 from variables import GLOBAL_LOGGER_LEVEL
 import helper
-from databases import users
+from databases import users, polls
 import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
@@ -28,7 +28,7 @@ def get():
     )
 
 
-async def start_send_plot(update: Update, _) -> None:
+async def start_send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало формирования графика. пользователь:{user_id}')
@@ -41,6 +41,11 @@ async def start_send_plot(update: Update, _) -> None:
     await update.message.reply_text('Выберите нужную категорию',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return GET_YEAR
 
 
@@ -58,6 +63,11 @@ async def get_year(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text('А теперь выберите год',
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return SEND_PLOT
 
 
@@ -88,6 +98,10 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
                                  photo=_generate_plot(title, months, values),
                                  reply_markup=helper.get_user_keyboard())
 
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return ConversationHandler.END
 
 
@@ -105,6 +119,11 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text('Хорошо, отменяем.',
                                     reply_markup=helper.get_user_keyboard())
+
+    polls.update_counter(user_id)
+    if polls.check_send_poll(user_id):
+        await helper.send_pool(context, user_id)
+
     return ConversationHandler.END
 
 
