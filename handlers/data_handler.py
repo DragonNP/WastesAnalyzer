@@ -70,30 +70,25 @@ async def add_year(update: Update, context: CallbackContext) -> None:
 
     logger.debug(f'Сохраняем год. id:{user_id}, год:{year}')
 
-    keyboard = []
-    names_rus_months = helper.get_rus_names_months()
-
-    flag = True
-    for name in names_rus_months:
-        if flag:
-            keyboard.append([name])
-            flag = False
-            continue
-        keyboard[-1].append(name)
-        flag = True
-    keyboard.append(['Отменить'])
-
     await update.message.reply_text(
         'Отлично! Теперь введите месяц за который вы хотите добавить расход',
-        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True))
+        reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(), one_time_keyboard=True, resize_keyboard=True))
 
     return MONTH
 
 
 async def add_month(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text) + 1
 
+    if update.message.text not in helper.get_rus_names_months():
+        await update.message.reply_text('Такого месяца не существует, введите еще раз',
+                                        reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(),
+                                                                         one_time_keyboard=True,
+                                                                         resize_keyboard=True))
+        return MONTH
+
+    # update.message.text
+    context.user_data['month'] = month = helper.get_rus_names_months().index() + 1
     logger.debug(f'Сохраняем месяц. id:{user_id}, месяц:{month}')
 
     keyboard = [['Отменить']]

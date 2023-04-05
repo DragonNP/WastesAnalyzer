@@ -17,7 +17,7 @@ log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 
 
 # TODO: Выбор типа графика:, 1 год, 2 года или все года
-# TODO: Далеекое будующие :) Можно выбрать сколько раз записывать расходы: раз в месяц, раз в год, каждый день
+# TODO: Далекое будующие :) Можно выбрать сколько раз записывать расходы: раз в месяц, раз в год, каждый день
 
 async def send_start_msg(update: Update, _) -> None:
     user_id = update.message.from_user.id
@@ -45,8 +45,7 @@ async def send_start_msg(update: Update, _) -> None:
 
 async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     error: Exception = context.error
-
-    logger.error(error)
+    logger.exception(error)
     await update.message.reply_text(
         'Произошла ошибка.\n'
         'Пожалуйста, свяжитесь со мной через телеграм - t.me/dragon_np или почту - dragonnp@yandex.ru',

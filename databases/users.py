@@ -27,7 +27,7 @@ def _check_user(user_id: int):
     """
     Проверяет существование id пользователя в базе данных
     :param user_id: id пользователя, которого надо проверить
-    :return: True - если id в базе данных, False - если нет
+    :return: True - если id есть в базе данных, False - если нет
     """
 
     global logger, db
