@@ -26,7 +26,6 @@ async def send_start_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info(f'Новое сообщение: /start или /help. пользователь:{user_id}')
 
     users.add_user(user_id)
-    await helper.send_pool(context, user_id)
 
     await update.message.reply_text('''Добро пожаловать! Я помогу проанализировать Ваши расходы на коммунальные услуги.
 

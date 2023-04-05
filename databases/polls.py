@@ -42,13 +42,10 @@ def update_counter(user_id: int):
 
     if user_id in counters:
         counters[user_id] += 1
-        return True
-
-    counters[user_id] = 1
-
+    else:
+        counters[user_id] = 1
     if counters[user_id] > 15:
         counters[user_id] = 0
-        return True
     return True
 
 
