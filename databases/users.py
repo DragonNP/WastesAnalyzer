@@ -32,7 +32,7 @@ def _check_user(user_id: int):
 
     global logger, db
 
-    logger.debug('Проверка существования пользователя')
+    logger.debug(f'Проверка существования пользователя. id:{user_id}')
     return str(user_id) in db.keys()
 
 
@@ -113,16 +113,18 @@ def get_categories_name(user_id: int):
 
     global logger, db
 
+    debug_text = f'id:{user_id}'
+
     try:
-        logger.debug(f'Запрос всех названий категорий. id:{user_id}')
+        logger.debug(f'Запрос всех названий категорий. {debug_text}')
 
         if not _check_user(user_id):
-            logger.debug(f'Пользователь не найден. id:{user_id}')
+            logger.debug(f'Пользователь не найден. {debug_text}')
             add_user(user_id)
 
         return list(db[str(user_id)].keys())
     except Exception as e:
-        logger.error(f'Не удалось категории пользователя. id:{user_id}', e)
+        logger.error(f'Не удалось категории пользователя. {debug_text}', e)
         return {}
 
 
@@ -136,7 +138,7 @@ def add_category(user_id: int, category_name: str):
 
     global logger, db
 
-    debug_text = f'id:{user_id}, имя:{category_name}'
+    debug_text = f'id:{user_id}'
 
     try:
         logger.debug(f'Добавление категории. {debug_text}')
@@ -169,7 +171,7 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str) -> i
 
     global logger, db
 
-    debug_text = f'id:{user_id}, год:{year}, месяц:{month}, данные:{data}'
+    debug_text = f'id:{user_id}'
 
     try:
         logger.debug(f'Сохранение показания. {debug_text}')

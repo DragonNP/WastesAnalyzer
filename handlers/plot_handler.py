@@ -1,6 +1,6 @@
 from variables import GLOBAL_LOGGER_LEVEL
 import helper
-from databases import users, polls
+from databases import users, polls, db_messages
 import logging
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
@@ -19,26 +19,26 @@ GET_YEAR, SEND_PLOT = range(2)
 
 def get():
     return ConversationHandler(
-        entry_points=[MessageHandler(filters.Text(['Сформировать график']), start_send_plot)],
+        entry_points=[MessageHandler(filters.Text([db_messages.PlotHandler.plot_btn]), start)],
         states={
-            GET_YEAR: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), get_year)],
-            SEND_PLOT: [MessageHandler(filters.TEXT & (~filters.Text(['Отменить'])), send_plot)],
+            GET_YEAR: [MessageHandler(filters.TEXT & (~filters.Text([db_messages.cancel_btn])), get_year)],
+            SEND_PLOT: [MessageHandler(filters.TEXT & (~filters.Text([db_messages.cancel_btn])), send_plot)],
         },
-        fallbacks=[MessageHandler(filters.Text(['Отменить']), cancel)]
+        fallbacks=[MessageHandler(filters.Text([db_messages.cancel_btn]), cancel)]
     )
 
 
-async def start_send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
-    logger.debug(f'Начало формирования графика. пользователь:{user_id}')
+    logger.debug(f'Начало формирования графика. id:{user_id}')
 
     keyboard = []
     for name in users.get_categories_name(user_id):
         keyboard.append([name])
-    keyboard.append(['Отменить'])
+    keyboard.append([db_messages.cancel_btn])
 
-    await update.message.reply_text('Выберите нужную категорию',
+    await update.message.reply_text(db_messages.PlotHandler.start,
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
 
@@ -53,14 +53,14 @@ async def get_year(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
     context.user_data['category'] = category = update.message.text
 
-    logger.debug(f'Сохраняем категорию. пользователь:{user_id}, категория:{category}')
+    logger.debug(f'Сохраняем категорию. id:{user_id}')
 
     keyboard = []
     for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
         keyboard.append([str(name)])
-    keyboard.append(['Отменить'])
+    keyboard.append([db_messages.cancel_btn])
 
-    await update.message.reply_text('А теперь выберите год',
+    await update.message.reply_text(db_messages.PlotHandler.get_year,
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                      resize_keyboard=True))
 
@@ -76,7 +76,7 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     category = context.user_data['category']
     year = update.message.text
 
-    logger.info(f'Отправка графика. пользователь:{user_id} категория:{category} год:{year}')
+    logger.info(f'Отправка графика. id:{user_id}')
 
     datas_for_year = users.get_datas(user_id, category)[year]
     title = f'{category}. {year} год.'
@@ -84,8 +84,7 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     values = []
 
     if len(datas_for_year) < 2:
-        await update.message.reply_text('За этот Вы указали меньше двух месяцев расходов по этой катерогии.'
-                                        '\nВведите еще расходы за месяца, чтобы построить график.',
+        await update.message.reply_text(db_messages.PlotHandler.send_plot_error,
                                         reply_markup=helper.get_user_keyboard())
         return ConversationHandler.END
 
@@ -108,7 +107,7 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.message.from_user.id
 
-    logger.debug(f'Пользователь отменил добавление показаний. id пользователя:{user_id}')
+    logger.debug(f'Пользователь отменил добавление показаний. id:{user_id}')
 
     if 'category' in context.user_data:
         del context.user_data['category']
@@ -117,7 +116,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if 'month' in context.user_data:
         del context.user_data['month']
 
-    await update.message.reply_text('Хорошо, отменяем.',
+    await update.message.reply_text(db_messages.cancel_msg,
                                     reply_markup=helper.get_user_keyboard())
 
     polls.update_counter(user_id)
@@ -135,8 +134,8 @@ def _generate_plot(title, x: list, y: list):
 
     fig.autofmt_xdate()
     plt.title(title)
-    plt.xlabel("Месяц")
-    plt.ylabel("Сумма, руб.")
+    plt.xlabel(db_messages.PlotHandler.x_label)
+    plt.ylabel(db_messages.PlotHandler.y_label)
     plt.autoscale()
 
     fig.savefig(plot_file, format='png')

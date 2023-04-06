@@ -11,5 +11,6 @@ COPY handlers/data_handler.py ./handlers/
 COPY handlers/plot_handler.py ./handlers/
 COPY databases/users.py ./databases/
 COPY databases/polls.py ./databases/
+COPY databases/db_messages.py ./databases/
 
 CMD ["python", "./main.py"]

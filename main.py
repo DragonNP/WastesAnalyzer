@@ -1,6 +1,6 @@
 from variables import *
 import helper
-from databases import users, polls
+from databases import db_messages, users, polls
 from handlers import plot_handler, data_handler
 import logging
 from telegram import Update
@@ -23,25 +23,13 @@ log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(me
 async def send_start_msg(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.from_user.id
 
-    logger.info(f'Новое сообщение: /start или /help. пользователь:{user_id}')
-
+    logger.info(f'Новое сообщение: /start или /help. id:{user_id}')
     users.add_user(user_id)
 
-    await update.message.reply_text('''Добро пожаловать! Я помогу проанализировать Ваши расходы на коммунальные услуги.
-
-Попробуйте сами:
- ⁃ Нажмите кнопку "Добавить расход"
- ⁃ Укажите категорию для ее добавления
- ⁃ Введите: год, месяц, сумму расхода
-При двух и более добавленных расходов, Вы сможете сформировать график, нажав на кнопку "Сформировать график".
-Приятного пользования 🤗
-
-Техподдержка:
-- Телеграмм t.me/dragon_np
-- Почта dragonnp@yandex.ru    
-''',
+    await update.message.reply_text(db_messages.start_msg,
                                     disable_web_page_preview=True,
                                     reply_markup=helper.get_user_keyboard())
+
     polls.update_counter(user_id)
     if polls.check_send_poll(user_id):
         await helper.send_pool(context, user_id)
@@ -52,24 +40,20 @@ async def receive_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
     answered_poll = context.bot_data[poll_answer.poll_id]
     user_answer = answered_poll["questions"][poll_answer.option_ids[0]]
 
-    if user_answer == 'Есть предложения':
-        await context.bot.send_message(answered_poll["chat_id"],
-                                       "Рад что у Вас есть предложения по улучшению бота!\n"
-                                       "Написать все свои пожелания можете тут: @dragon_np или отправить их на почту: dragonnp@yandex.ru")
+    if user_answer == db_messages.Poll.options[2]:
+        await context.bot.send_message(answered_poll["chat_id"], db_messages.Poll.any_suggestions)
     polls.save_result(user_answer)
 
-    await context.bot.send_message(answered_poll["chat_id"], "Спасибо! Ты делаешь бота еще лучше)")
+    await context.bot.send_message(answered_poll["chat_id"], db_messages.Poll.thank)
     await context.bot.stop_poll(answered_poll["chat_id"], answered_poll["message_id"])
 
 
 async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     error: Exception = context.error
     logger.exception(error)
-    await update.message.reply_text(
-        'Произошла ошибка.\n'
-        'Пожалуйста, свяжитесь со мной через телеграм - t.me/dragon_np или почту - dragonnp@yandex.ru',
-        disable_web_page_preview=True,
-        reply_markup=helper.get_user_keyboard())
+    await update.message.reply_text(db_messages.error,
+                                    disable_web_page_preview=True,
+                                    reply_markup=helper.get_user_keyboard())
 
     if GLOBAL_LOGGER_LEVEL == 'DEBUG':
         await update.get_bot().sendDocument(USER_ID_ADMIN, PATH_TO_LOG)

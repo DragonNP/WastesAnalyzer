@@ -1,4 +1,5 @@
 from variables import *
+from databases import db_messages
 import json
 
 logger = logging.getLogger('polls_counters')
@@ -24,11 +25,8 @@ def load():
         db = json.load(open(location, 'r'))
 
     if db == {}:
-        db = {
-            'Да': 0,
-            'Нет': 0,
-            'Есть предложения': 0
-        }
+        for key in db_messages.Poll.options:
+            db[key] = 0
         _dump_db()
 
 
