@@ -9,7 +9,8 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     Application,
-    PollAnswerHandler,
+    PollAnswerHandler, MessageHandler,
+    filters,
 )
 
 logger = logging.getLogger('main')
@@ -84,6 +85,7 @@ def main() -> None:
     application.add_handler(plot_handler.get())
     application.add_handler(PollAnswerHandler(receive_poll_answer))
     application.add_error_handler(error_callback)
+    application.add_handler(MessageHandler(filters.TEXT, send_start_msg))
 
     users.load()
     polls.load()

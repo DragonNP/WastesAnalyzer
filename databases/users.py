@@ -177,7 +177,7 @@ def check_year(user_id: int, category: str, year: str):
 
         if not check_category(user_id, category):
             return False
-        return category in db[str(user_id)][category]
+        return year in db[str(user_id)][category]
     except Exception as e:
         logger.error(f'Не удалось категории пользователя. {debug_text}', e)
         return {}
@@ -242,14 +242,12 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str) -> i
         if year not in db[str(user_id)][category]:
             db[str(user_id)][category][year] = {}
 
+        db[str(user_id)][category][year][month] = data
+        _dump_db()
         if month not in db[str(user_id)][category][year]:
-            db[str(user_id)][category][year][month] = data
-            _dump_db()
             logger.debug(f'Сохранение завершено. {debug_text}')
             return 1
         else:
-            db[str(user_id)][category][year][month] = data
-            _dump_db()
             logger.error(f'Показания уже сохранены за этот период. {debug_text}')
             return 2
     except Exception as e:
