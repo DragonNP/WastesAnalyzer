@@ -72,7 +72,7 @@ async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=helper.get_user_keyboard())
 
     if GLOBAL_LOGGER_LEVEL == 'DEBUG':
-        await update.get_bot().sendDocument(576476322, PATH_TO_LOG)
+        await update.get_bot().sendDocument(USER_ID_ADMIN, PATH_TO_LOG)
 
     return ConversationHandler.END
 
