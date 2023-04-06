@@ -1,4 +1,4 @@
-from variables import *
+from variables import GLOBAL_LOGGER_LEVEL, USER_ID_ADMIN, PATH_TO_LOG, TELEGRAM_BOT_TOKEN
 import helper
 from databases import db_messages, users, polls
 from handlers import plot_handler, data_handler
@@ -51,7 +51,7 @@ async def receive_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
     await context.bot.stop_poll(answered_poll["chat_id"], answered_poll["message_id"])
 
 
-async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     error: Exception = context.error
 
     if error.__class__.__name__ == 'AttributeError':

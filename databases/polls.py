@@ -1,6 +1,8 @@
-from variables import *
-from databases import db_messages
 import json
+import logging
+import os
+from databases import db_messages
+from variables import GLOBAL_LOGGER_LEVEL, PATH_TO_RESULT_POLL_DATA_BASE
 
 logger = logging.getLogger('polls_counters')
 logger.setLevel(GLOBAL_LOGGER_LEVEL)

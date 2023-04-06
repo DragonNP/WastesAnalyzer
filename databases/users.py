@@ -1,5 +1,7 @@
 import json
-from variables import *
+import logging
+import os
+from variables import GLOBAL_LOGGER_LEVEL, PATH_TO_USERS_DATA_BASE
 
 logger = logging.getLogger('users_db')
 logger.setLevel(GLOBAL_LOGGER_LEVEL)
