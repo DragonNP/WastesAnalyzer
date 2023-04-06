@@ -42,6 +42,8 @@ async def receive_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     if user_answer == db_messages.Poll.options[2]:
         await context.bot.send_message(answered_poll["chat_id"], db_messages.Poll.any_suggestions)
+    if user_answer == db_messages.Poll.options[1]:
+        await context.bot.send_message(answered_poll["chat_id"], db_messages.Poll.no)
     polls.save_result(user_answer)
 
     await context.bot.send_message(answered_poll["chat_id"], db_messages.Poll.thank)
