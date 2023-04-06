@@ -128,6 +128,61 @@ def get_categories_name(user_id: int):
         return {}
 
 
+def check_category(user_id: int, category: str):
+    """
+    Возвращаяет существует ли категория у пользлователя
+    :param user_id: id пользователя
+    :param category: категория, которую необходимо проверить
+    :return: True - существет категория, False - если нет
+    """
+
+    global logger, db
+
+    debug_text = f'id:{user_id}'
+
+    try:
+        logger.debug(f'Запрос всех названий категорий. {debug_text}')
+
+        if not _check_user(user_id):
+            logger.debug(f'Пользователь не найден. {debug_text}')
+            add_user(user_id)
+            return False
+
+        return category in db[str(user_id)].keys()
+    except Exception as e:
+        logger.error(f'Не удалось категории пользователя. {debug_text}', e)
+        return {}
+
+
+def check_year(user_id: int, category: str, year: str):
+    """
+    Возвращаяет существует ли год в определённой категории у пользлователя
+    :param user_id: id пользователя
+    :param category: категория, где нужно проверить год
+    :param year: год, который необходимо проверить
+    :return: True - существет категория, False - если нет
+    """
+
+    global logger, db
+
+    debug_text = f'id:{user_id}'
+
+    try:
+        logger.debug(f'Запрос всех названий категорий. {debug_text}')
+
+        if not _check_user(user_id):
+            logger.debug(f'Пользователь не найден. {debug_text}')
+            add_user(user_id)
+            return False
+
+        if not check_category(user_id, category):
+            return False
+        return category in db[str(user_id)][category]
+    except Exception as e:
+        logger.error(f'Не удалось категории пользователя. {debug_text}', e)
+        return {}
+
+
 def add_category(user_id: int, category_name: str):
     """
     Добавляет категорию пользователя

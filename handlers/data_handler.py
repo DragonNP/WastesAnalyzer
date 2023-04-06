@@ -37,6 +37,8 @@ async def start_add_data(update: Update, context: CallbackContext) -> None:
     keyboard = []
     for name in users.get_categories_name(user_id):
         keyboard.append([name])
+    if len(keyboard) == 0:
+        keyboard = [['Электроэнергия'], ['Водоснабжение'], ['Газ']]
     keyboard.append([db_messages.cancel_btn])
 
     await update.message.reply_text(db_messages.DataHandler.start,
@@ -57,8 +59,15 @@ async def add_category(update: Update, context: CallbackContext) -> None:
     logger.debug(f'Сохраняем категорию. id:{user_id}')
 
     keyboard = []
-    for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
-        keyboard.append([str(name)])
+    flag = True
+    for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()], reverse=True):
+        if flag:
+            keyboard.append([str(name)])
+        else:
+            keyboard[-1].append(str(name))
+        flag = not flag
+    if len(keyboard) == 0:
+        keyboard = [['2023', '2022'], ['2021', '2020']]
     keyboard.append([db_messages.cancel_btn])
 
     await update.message.reply_text(db_messages.DataHandler.add_category,
@@ -74,7 +83,7 @@ async def add_category(update: Update, context: CallbackContext) -> None:
 
 async def add_year(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
-    context.user_data['year'] = year = update.message.text
+    context.user_data['year'] = update.message.text
 
     logger.debug(f'Сохраняем год. id:{user_id}')
 

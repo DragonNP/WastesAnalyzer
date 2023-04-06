@@ -52,6 +52,11 @@ async def receive_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     error: Exception = context.error
+
+    if error.__class__.__name__ == 'AttributeError':
+        logger.error(str(error))
+        return ConversationHandler.END
+
     logger.exception(error)
     await update.message.reply_text(db_messages.error,
                                     disable_web_page_preview=True,

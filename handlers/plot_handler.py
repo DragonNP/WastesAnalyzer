@@ -24,11 +24,12 @@ def get():
             GET_YEAR: [MessageHandler(filters.TEXT & (~filters.Text([db_messages.cancel_btn])), get_year)],
             SEND_PLOT: [MessageHandler(filters.TEXT & (~filters.Text([db_messages.cancel_btn])), send_plot)],
         },
-        fallbacks=[MessageHandler(filters.Text([db_messages.cancel_btn]), cancel)]
+        fallbacks=[MessageHandler(filters.Text([db_messages.cancel_btn]), cancel)],
+
     )
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.message.from_user.id
 
     logger.debug(f'Начало формирования графика. id:{user_id}')
@@ -37,6 +38,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     for name in users.get_categories_name(user_id):
         keyboard.append([name])
     keyboard.append([db_messages.cancel_btn])
+
+    if len(keyboard) == 1:
+        await update.message.reply_text(db_messages.PlotHandler.start_error,
+                                        reply_markup=helper.get_user_keyboard())
+        return ConversationHandler.END
 
     await update.message.reply_text(db_messages.PlotHandler.start,
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
@@ -49,16 +55,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     return GET_YEAR
 
 
-async def get_year(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def get_year(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.message.from_user.id
     context.user_data['category'] = category = update.message.text
 
     logger.debug(f'Сохраняем категорию. id:{user_id}')
 
+    if not users.check_category(user_id, category):
+        keyboard = []
+        for name in users.get_categories_name(user_id):
+            keyboard.append([name])
+        keyboard.append([db_messages.cancel_btn])
+
+        await update.message.reply_text(db_messages.PlotHandler.category_error,
+                                        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                                         resize_keyboard=True))
+        return GET_YEAR
+
     keyboard = []
-    for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()]):
-        keyboard.append([str(name)])
+    flag = True
+    for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()], reverse=True):
+        if flag:
+            keyboard.append([str(name)])
+        else:
+            keyboard[-1].append(str(name))
+        flag = not flag
     keyboard.append([db_messages.cancel_btn])
+
+    if len(keyboard) == 1:
+        await update.message.reply_text(db_messages.PlotHandler.start_error,
+                                        reply_markup=helper.get_user_keyboard())
+        return ConversationHandler.END
 
     await update.message.reply_text(db_messages.PlotHandler.get_year,
                                     reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
@@ -75,6 +102,22 @@ async def send_plot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.message.from_user.id
     category = context.user_data['category']
     year = update.message.text
+
+    if not users.check_year(user_id, category, year):
+        keyboard = []
+        flag = True
+        for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()], reverse=True):
+            if flag:
+                keyboard.append([str(name)])
+            else:
+                keyboard[-1].append(str(name))
+            flag = not flag
+        keyboard.append([db_messages.cancel_btn])
+
+        await update.message.reply_text(db_messages.PlotHandler.year_error,
+                                        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                                         resize_keyboard=True))
+        return SEND_PLOT
 
     logger.info(f'Отправка графика. id:{user_id}')
 
