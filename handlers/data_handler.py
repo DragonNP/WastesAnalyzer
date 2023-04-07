@@ -62,18 +62,7 @@ async def add_category(update: Update, context: CallbackContext) -> int:
 
         logger.debug(f'Сохраняем категорию. id:{user_id}')
 
-        keyboard = []
-        flag = True
-        for name in sorted([int(x) for x in users.get_datas(user_id, category).keys()], reverse=True):
-            if flag:
-                keyboard.append([str(name)])
-            else:
-                keyboard[-1].append(str(name))
-            flag = not flag
-        if len(keyboard) == 0:
-            keyboard = [['2023', '2022'], ['2021', '2020']]
-        keyboard.append([db_messages.cancel_btn])
-
+        keyboard = keyboard_with_years(users.get_datas(user_id, category))
         await update.message.reply_text(db_messages.DataHandler.add_category,
                                         reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
                                                                          resize_keyboard=True))
@@ -89,18 +78,24 @@ async def add_category(update: Update, context: CallbackContext) -> int:
 
 async def add_year(update: Update, context: CallbackContext) -> int:
     try:
-        if 'isConvBreak' in context.user_data and context.user_data['isConvBreak']:
-            context.user_data['isConvBreak'] = False
-            return ConversationHandler.END
-
         user_id = update.message.from_user.id
-        context.user_data['year'] = update.message.text
+        context.user_data['year'] = year = update.message.text
+        category = context.user_data['category']
+
+        if not helper.is_year(year):
+            keyboard = keyboard_with_years(users.get_datas(user_id, category))
+            await update.message.reply_text(
+                db_messages.DataHandler.year_error,
+                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True,
+                                                 resize_keyboard=True))
+            return YEAR
 
         logger.debug(f'Сохраняем год. id:{user_id}')
 
         await update.message.reply_text(
             db_messages.DataHandler.add_year,
-            reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(), one_time_keyboard=True, resize_keyboard=True))
+            reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(), one_time_keyboard=True,
+                                             resize_keyboard=True))
 
         polls.update_counter(user_id)
         if polls.check_send_poll(user_id):
@@ -122,7 +117,7 @@ async def add_month(update: Update, context: CallbackContext) -> int:
                                                                              resize_keyboard=True))
             return MONTH
 
-        context.user_data['month'] = month = helper.get_rus_names_months().index(update.message.text) + 1
+        context.user_data['month'] = str(helper.get_rus_names_months().index(update.message.text) + 1)
         logger.debug(f'Сохраняем месяц. id:{user_id}')
 
         keyboard = [[db_messages.cancel_btn]]
@@ -145,16 +140,29 @@ async def add_data(update: Update, context: CallbackContext) -> int:
         user_id = update.message.from_user.id
         data = update.message.text
 
+        if not helper.is_number(data):
+            await update.message.reply_text(db_messages.DataHandler.data_error,
+                                            reply_markup=ReplyKeyboardMarkup(helper.get_months_keyboard(),
+                                                                             one_time_keyboard=True,
+                                                                             resize_keyboard=True))
+            return DATA
+
         logger.debug(f'Сохраняем показания в бд. id:{user_id}')
 
-        users.add_data(user_id,
-                       context.user_data['category'],
-                       context.user_data['year'],
-                       context.user_data['month'],
-                       data.replace(',', '.'))
+        result = users.add_data(user_id,
+                                context.user_data['category'],
+                                context.user_data['year'],
+                                context.user_data['month'],
+                                data.replace(',', '.'))
 
-        await update.message.reply_text(db_messages.DataHandler.add_data,
-                                        reply_markup=helper.get_user_keyboard())
+        if result == 0:
+            return await error(update)
+        elif result == 1:
+            await update.message.reply_text(db_messages.DataHandler.add_data_success,
+                                            reply_markup=helper.get_user_keyboard())
+        elif result == 2:
+            await update.message.reply_text(db_messages.DataHandler.add_data_already,
+                                            reply_markup=helper.get_user_keyboard())
 
         polls.update_counter(user_id)
         if polls.check_send_poll(user_id):
@@ -190,13 +198,31 @@ async def cancel(update: Update, context: CallbackContext) -> int:
         return await error(update, e)
 
 
-async def error(update: Update, e: Exception) -> int:
-    logger.exception(e)
+async def error(update: Update, e: Exception = None) -> int:
+    if not (e is None):
+        logger.exception(e)
+
     await update.message.reply_text(db_messages.error,
                                     disable_web_page_preview=True,
                                     reply_markup=helper.get_user_keyboard())
 
-    if GLOBAL_LOGGER_LEVEL == 'DEBUG':
+    if not (e is None) and GLOBAL_LOGGER_LEVEL == 'DEBUG':
         await update.get_bot().sendDocument(USER_ID_ADMIN, PATH_TO_LOG)
 
     return ConversationHandler.END
+
+
+def keyboard_with_years(datas):
+    keyboard = []
+    flag = True
+    for name in sorted([int(x) for x in datas.keys()], reverse=True):
+        if flag:
+            keyboard.append([str(name)])
+        else:
+            keyboard[-1].append(str(name))
+        flag = not flag
+    if len(keyboard) == 0:
+        keyboard = [['2023', '2022'], ['2021', '2020']]
+    keyboard.append([db_messages.cancel_btn])
+
+    return keyboard

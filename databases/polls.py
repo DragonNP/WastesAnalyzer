@@ -79,7 +79,7 @@ def _dump_db():
     global logger, db, location
 
     try:
-        logger.debug('Сохранение дб')
+        logger.debug('Сохранение бд')
 
         json.dump(db, open(location, 'w+'))
         logger.debug('Бд сохранена')

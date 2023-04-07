@@ -15,7 +15,6 @@ from telegram.ext import (
 
 logger = logging.getLogger('main')
 logger.setLevel(GLOBAL_LOGGER_LEVEL)
-log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 # TODO: Выбор типа графика:, 1 год, 2 года или все года
@@ -71,7 +70,7 @@ async def error_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
                         handlers=[
                             logging.FileHandler(PATH_TO_LOG),
                             logging.StreamHandler()

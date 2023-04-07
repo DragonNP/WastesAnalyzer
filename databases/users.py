@@ -43,9 +43,6 @@ def _dump_db():
     Сохраняет базу данных в текстовый файл.
     :return: None
     """
-
-    global logger, db, location
-
     try:
         logger.debug('Сохранение дб')
 
@@ -88,7 +85,7 @@ def get_datas(user_id: int, category: str):
 
     global logger, db
 
-    debug_text = f'id:{user_id} категория:{category}'
+    debug_text = f'id:{user_id}'
 
     try:
         logger.debug(f'Запрос всех показаний пользователя по категории. {debug_text}')
@@ -217,7 +214,7 @@ def add_category(user_id: int, category_name: str):
 
 def add_data(user_id: int, category: str, year: str, month: str, data: str) -> int:
     """
-    Добавляет расход к пользователю
+    Добавляет расход пользователя
     :param user_id: id пользователя
     :param category: категория
     :param year: год
@@ -231,7 +228,10 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str) -> i
     debug_text = f'id:{user_id}'
 
     try:
-        logger.debug(f'Сохранение показания. {debug_text}')
+        logger.debug(f'Сохранение расхода. {debug_text}')
+
+        if data[-1] in [',', '.']:
+            data = data[0:len(data) - 1]
 
         if not _check_user(user_id):
             logger.debug(f'Пользователь не найден. {debug_text}')
@@ -244,14 +244,16 @@ def add_data(user_id: int, category: str, year: str, month: str, data: str) -> i
         if year not in db[str(user_id)][category]:
             db[str(user_id)][category][year] = {}
 
-        db[str(user_id)][category][year][month] = data
-        _dump_db()
         if month not in db[str(user_id)][category][year]:
+            db[str(user_id)][category][year][month] = data
             logger.debug(f'Сохранение завершено. {debug_text}')
+            _dump_db()
             return 1
         else:
-            logger.error(f'Показания уже сохранены за этот период. {debug_text}')
+            db[str(user_id)][category][year][month] = data
+            logger.debug(f'Расход уже сохранен за этот период. Данные обновлены. {debug_text}')
+            _dump_db()
             return 2
     except Exception as e:
-        logger.error(f'Категория не найдена. Не удалось добавить показания {debug_text}', e)
+        logger.error(f'Не удалось добавить расход. {debug_text}', e)
         return 0

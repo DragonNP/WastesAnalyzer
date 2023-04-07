@@ -74,3 +74,19 @@ async def send_pool(context: ContextTypes.DEFAULT_TYPE, user_id: int):
         }
     }
     context.bot_data.update(payload)
+
+
+def is_number(s: str):
+    for i in s:
+        try:
+            if i not in [',', '.']:
+                int(i)
+        except ValueError:
+            return False
+    return True
+
+
+def is_year(year: str):
+    if is_number(year) and 1970 <= int(year) <= 2023:
+        return True
+    return False
